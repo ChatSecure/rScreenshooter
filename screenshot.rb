@@ -25,12 +25,12 @@ class Screenshooter
 		@ios_version = config["ios_version"]
 		@app_name = app_name
 
-		instruments_devices = `instruments -w help`
+		instruments_devices = `instruments -s devices`
 
-		@languages.each do |language|
-			system("./bin/switch_language #{language}")
+		@devices.each do |device|
+			#system("./bin/switch_language #{language}")
 
-			@devices.each do |device|
+			@languages.each do |language|
 
 				regexp = /#{Regexp.quote(device)} \[(.*)\]/
 				if result = instruments_devices.match(regexp)
@@ -43,9 +43,13 @@ class Screenshooter
 				@app_path = get_app_path(applications_folder)
 
 				puts "Running #{device} in language #{language}"
-				execute("#{device}")
+				execute("#{device}","#{language}")
 
-				system("mv Results/Run*/*.png '#{@results_path}'")
+
+				@full_results_path = @results_path + "/" + language
+				puts @full_results_path
+				FileUtils.mkdir_p @full_results_path
+				system("mv Results/Run*/*.png '#{@full_results_path}'")
 
 				if generate_frames
 					Dir.glob("#{@results_path}/*.png").each do |screen|
@@ -85,10 +89,10 @@ class Screenshooter
 		raise "Sorry, I couldn't find an app with the name '#{@app_name}'"
 	end
 
-	def execute(device)
+	def execute(device,language)
 		# xcode-select -p
 		command = "instruments -w \"#{device}\" -t \"Automation\""
-		command += " \"#{@app_path}\" -e UIASCRIPT \"#{@automation_script}\" -e UIARESULTSPATH Results/"
+		command += " \"#{@app_path}\" -e UIASCRIPT \"#{@automation_script}\" -e UIARESULTSPATH Results/ -AppleLanguages \"(#{language})\" -AppleLocale \"#{language}\""
 		puts command
 		system(command)
 	end
